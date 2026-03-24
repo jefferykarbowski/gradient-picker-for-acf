@@ -1,0 +1,109 @@
+/** Gradient Picker for ACF — Admin field styles. */
+
+/* -----------------------------------------------------------------------
+   Field wrapper
+----------------------------------------------------------------------- */
+.gpfa-field {
+    margin: 2px 0;
+    position: relative;
+}
+
+/* -----------------------------------------------------------------------
+   Gradient bar
+----------------------------------------------------------------------- */
+.gpfa-gradient-bar {
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.gpfa-gradient-bar .grp-wrapper {
+    border-radius: 4px;
+    border: 1px solid #ccd0d4;
+    overflow: hidden;
+    height: 40px;
+}
+
+.gpfa-gradient-bar .grp-preview {
+    border-radius: 4px;
+}
+
+/* -----------------------------------------------------------------------
+   Controls row
+----------------------------------------------------------------------- */
+.gpfa-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.gpfa-custom-angle {
+    width: 70px;
+}
+
+.gpfa-angle-suffix {
+    color: #666;
+    font-size: 13px;
+}
+
+/* -----------------------------------------------------------------------
+   CSS preview label
+----------------------------------------------------------------------- */
+.gpfa-preview {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #666;
+    padding: 4px 0;
+    word-break: break-all;
+    line-height: 1.4;
+    min-height: 16px;
+}
+
+/* -----------------------------------------------------------------------
+   Grapick handler overrides
+----------------------------------------------------------------------- */
+
+/* Hide Grapick's built-in color input — wp-color-picker is used instead */
+.grp-handler [data-toggle="handler-color-wrap"] {
+    display: none !important;
+}
+
+/* Ensure the wp-color-picker container is visible */
+.grp-handler [data-toggle="handler-color-c"] {
+    display: block;
+}
+
+/* Position the color picker below the handler dot */
+.grp-handler .grp-handler-cp-c {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    margin-top: 5px;
+}
+
+/* Make the X close button a reasonable size */
+.grp-handler-close {
+    font-size: 16px;
+    line-height: 15px;
+}
+
+/* -----------------------------------------------------------------------
+   wp-color-picker positioning inside gradient bar
+----------------------------------------------------------------------- */
+.grp-handler .wp-picker-container {
+    position: relative;
+}
+
+.grp-handler .wp-picker-holder {
+    position: absolute;
+    z-index: 1000;
+    left: -100px;
+}
+
+/* Hide the hex text input row — only the color swatch trigger is needed */
+.grp-handler .wp-picker-input-wrap {
+    display: none;
+}
