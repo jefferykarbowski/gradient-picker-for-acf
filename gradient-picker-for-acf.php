@@ -11,7 +11,6 @@
  * Text Domain: gradient-picker-for-acf
  * Requires at least: 6.0
  * Requires PHP: 7.2
- * Requires Plugins: advanced-custom-fields
  *
  * @package Gradient_Picker_For_ACF
  */
