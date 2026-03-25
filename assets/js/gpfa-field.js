@@ -3,29 +3,20 @@
 
     /**
      * Check if a string is a CSS gradient direction.
-     *
-     * @param {string} str The string to test.
-     * @return {boolean} True if the string is a direction keyword or angle.
      */
     function isDirection(str) {
         str = str.trim();
-
         if (/^\d+(\.\d+)?deg$/.test(str)) {
             return true;
         }
-
         if (/^to\s+(top|bottom|left|right)(\s+(top|bottom|left|right))?$/.test(str)) {
             return true;
         }
-
         return false;
     }
 
     /**
      * Parse a CSS linear-gradient string into its components.
-     *
-     * @param {string} value A CSS linear-gradient value.
-     * @return {Object|null} Parsed object with direction and stops, or null on failure.
      */
     function parseLinearGradient(value) {
         if (!value || typeof value !== 'string') {
@@ -38,8 +29,6 @@
         }
 
         var content = match[1].trim();
-
-        // Split by commas that are not inside parentheses.
         var parts = [];
         var current = '';
         var depth = 0;
@@ -87,7 +76,6 @@
                     position: parseFloat(posMatch[2])
                 });
             } else {
-                // Color without explicit position — skip or treat as color-only.
                 stops.push({
                     color: part,
                     position: null
@@ -106,48 +94,34 @@
     }
 
     /**
-     * Map direction keywords to their equivalent degree values.
-     */
-    var directionToDeg = {
-        'to top':          '0deg',
-        'to right':        '90deg',
-        'to bottom':       '180deg',
-        'to left':         '270deg',
-        'to top right':    '45deg',
-        'to top left':     '315deg',
-        'to bottom right': '135deg',
-        'to bottom left':  '225deg'
-    };
-
-    /**
-     * Map degree values back to direction keywords.
-     */
-    var degToDirection = {};
-    (function() {
-        var key;
-        for (key in directionToDeg) {
-            if (directionToDeg.hasOwnProperty(key)) {
-                degToDirection[directionToDeg[key]] = key;
-            }
-        }
-    })();
-
-    /**
      * Initialize a single gradient picker field.
-     *
-     * @param {Element} el The .gpfa-field container element.
      */
     function initGradientField(el) {
         var input       = el.querySelector('.gpfa-value');
         var bar         = el.querySelector('.gpfa-gradient-bar');
-        var direction   = el.querySelector('.gpfa-direction');
+        var dirSelect   = el.querySelector('.gpfa-direction');
         var customAngle = el.querySelector('.gpfa-custom-angle');
         var angleSuffix = el.querySelector('.gpfa-angle-suffix');
         var preview     = el.querySelector('.gpfa-preview');
 
-        if (!input || !bar || !direction) {
+        if (!input || !bar || !dirSelect) {
             return;
         }
+
+        // Create a color picker container that sits below the gradient bar.
+        var pickerWrap = document.createElement('div');
+        pickerWrap.className = 'gpfa-color-picker-wrap';
+        pickerWrap.style.display = 'none';
+        bar.parentNode.insertBefore(pickerWrap, bar.nextSibling);
+
+        var pickerInput = document.createElement('input');
+        pickerInput.type = 'text';
+        pickerInput.className = 'gpfa-color-input';
+        pickerInput.setAttribute('data-alpha-enabled', 'true');
+        pickerWrap.appendChild(pickerInput);
+
+        var activeHandler = null;
+        var pickerReady = false;
 
         var gp = new Grapick({
             el: bar,
@@ -155,40 +129,52 @@
             width: '100%'
         });
 
-        gp.setColorPicker(function(handler) {
-            var handlerEl = handler.getEl();
-            var colorContainer = handlerEl.querySelector('[data-toggle="handler-color-c"]');
+        // Disable Grapick's built-in color picker entirely.
+        gp.setColorPicker(function() {
+            // Return nothing — we handle color picking externally.
+        });
 
-            if (!colorContainer) {
-                return;
-            }
-
-            // Hide the built-in color input.
-            var colorWrap = handlerEl.querySelector('[data-toggle="handler-color-wrap"]');
-            if (colorWrap) {
-                colorWrap.style.display = 'none';
-            }
-
-            var pickerInput = document.createElement('input');
-            pickerInput.type = 'text';
-            pickerInput.value = handler.getColor();
-            colorContainer.appendChild(pickerInput);
-
-            $(pickerInput).wpColorPicker({
-                color: handler.getColor(),
-                alphaEnabled: true,
-                change: function(event, ui) {
-                    var color = ui.color.toString();
-                    handler.setColor(color);
-                },
-                clear: function() {
-                    handler.setColor('transparent');
+        // Initialize wp-color-picker on our external input.
+        $(pickerInput).wpColorPicker({
+            change: function(event, ui) {
+                if (activeHandler) {
+                    activeHandler.setColor(ui.color.toString());
                 }
-            });
+            },
+            clear: function() {
+                if (activeHandler) {
+                    activeHandler.setColor('transparent');
+                }
+            }
+        });
+        pickerReady = true;
+
+        // When a handler is selected, show the color picker with its color.
+        gp.on('handler:select', function(handler) {
+            activeHandler = handler;
+            pickerWrap.style.display = '';
+
+            if (pickerReady) {
+                $(pickerInput).wpColorPicker('color', handler.getColor());
+            }
+        });
+
+        // When a handler is deselected, hide the picker.
+        gp.on('handler:deselect', function() {
+            activeHandler = null;
+            pickerWrap.style.display = 'none';
+        });
+
+        // When a handler is removed, hide the picker if it was the active one.
+        gp.on('handler:remove', function(removed) {
+            if (activeHandler === removed) {
+                activeHandler = null;
+                pickerWrap.style.display = 'none';
+            }
         });
 
         /**
-         * Build the gradient CSS value and update the hidden input and preview.
+         * Build the gradient CSS value and sync to hidden input.
          */
         function updateValue() {
             if (gp.getHandlers().length === 0) {
@@ -199,8 +185,7 @@
                 return;
             }
 
-            var dir = direction.value;
-
+            var dir = dirSelect.value;
             if (dir === 'custom') {
                 var angle = customAngle ? customAngle.value : '0';
                 dir = angle + 'deg';
@@ -216,48 +201,45 @@
             $(input).trigger('input');
         }
 
-        // Parse existing value and populate controls.
+        // Parse existing value and populate.
         var existingValue = input.value;
         var parsed = parseLinearGradient(existingValue);
 
         if (parsed) {
-            // Determine which direction option to select.
             var parsedDir = parsed.direction;
 
             if (parsedDir) {
-                // Check if the parsed direction matches a preset option.
                 var matchedPreset = false;
+                var options = dirSelect.querySelectorAll('option');
+                var j;
 
-                // If it's a degree value, see if it maps to a keyword direction.
-                if (degToDirection[parsedDir]) {
-                    var keyword = degToDirection[parsedDir];
-                    var options = direction.querySelectorAll('option');
-                    var j;
-                    for (j = 0; j < options.length; j++) {
-                        if (options[j].value === keyword) {
-                            direction.value = keyword;
-                            matchedPreset = true;
-                            break;
+                for (j = 0; j < options.length; j++) {
+                    if (options[j].value === parsedDir) {
+                        dirSelect.value = parsedDir;
+                        matchedPreset = true;
+                        break;
+                    }
+                }
+
+                if (!matchedPreset) {
+                    // Check if it's an angle matching a keyword.
+                    var keywordMap = {
+                        '0deg': 'to top', '90deg': 'to right', '180deg': 'to bottom', '270deg': 'to left',
+                        '45deg': 'to top right', '135deg': 'to bottom right', '225deg': 'to bottom left', '315deg': 'to top left'
+                    };
+                    if (keywordMap[parsedDir]) {
+                        for (j = 0; j < options.length; j++) {
+                            if (options[j].value === keywordMap[parsedDir]) {
+                                dirSelect.value = keywordMap[parsedDir];
+                                matchedPreset = true;
+                                break;
+                            }
                         }
                     }
                 }
 
                 if (!matchedPreset) {
-                    // Try direct match (e.g., "to right").
-                    var options2 = direction.querySelectorAll('option');
-                    var k;
-                    for (k = 0; k < options2.length; k++) {
-                        if (options2[k].value === parsedDir) {
-                            direction.value = parsedDir;
-                            matchedPreset = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!matchedPreset) {
-                    // It's a custom angle not in the preset list.
-                    direction.value = 'custom';
+                    dirSelect.value = 'custom';
                     if (customAngle) {
                         customAngle.value = parseInt(parsedDir, 10);
                         customAngle.style.display = '';
@@ -268,50 +250,42 @@
                 }
             }
 
-            // Add parsed stops.
             var s;
             for (s = 0; s < parsed.stops.length; s++) {
                 var stop = parsed.stops[s];
                 var pos = stop.position !== null ? stop.position : Math.round((s / Math.max(parsed.stops.length - 1, 1)) * 100);
-                gp.addHandler(pos, stop.color);
+                gp.addHandler(pos, stop.color, 0);
             }
+        } else if (existingValue && existingValue.charAt(0) === '#') {
+            // Plain color value (backward compat) — create a solid gradient.
+            gp.addHandler(0, existingValue, 0);
+            gp.addHandler(100, existingValue, 0);
         } else {
-            // No value or parsing failed — add default stops.
-            gp.addHandler(0, '#ffffff');
-            gp.addHandler(100, '#000000');
+            gp.addHandler(0, '#ffffff', 0);
+            gp.addHandler(100, '#000000', 0);
         }
 
-        // Direction select change handler.
-        $(direction).on('change', function() {
-            if (direction.value === 'custom') {
-                if (customAngle) {
-                    customAngle.style.display = '';
-                }
-                if (angleSuffix) {
-                    angleSuffix.style.display = '';
-                }
+        // Direction controls.
+        $(dirSelect).on('change', function() {
+            if (dirSelect.value === 'custom') {
+                if (customAngle) { customAngle.style.display = ''; }
+                if (angleSuffix) { angleSuffix.style.display = ''; }
             } else {
-                if (customAngle) {
-                    customAngle.style.display = 'none';
-                }
-                if (angleSuffix) {
-                    angleSuffix.style.display = 'none';
-                }
+                if (customAngle) { customAngle.style.display = 'none'; }
+                if (angleSuffix) { angleSuffix.style.display = 'none'; }
             }
             updateValue();
         });
 
-        // Custom angle input change handler.
         if (customAngle) {
             $(customAngle).on('change input', function() {
                 updateValue();
             });
         }
 
-        // Grapick change handler.
         gp.on('change', updateValue);
 
-        // Initialize value on load.
+        // Initial value sync.
         updateValue();
     }
 
