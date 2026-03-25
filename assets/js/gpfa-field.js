@@ -118,6 +118,7 @@
         pickerInput.type = 'text';
         pickerInput.className = 'gpfa-color-input';
         pickerInput.setAttribute('data-alpha-enabled', 'true');
+        pickerInput.setAttribute('data-type', 'full');
         pickerWrap.appendChild(pickerInput);
 
         var activeHandler = null;
