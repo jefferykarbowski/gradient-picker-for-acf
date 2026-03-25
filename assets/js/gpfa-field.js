@@ -117,9 +117,14 @@
         var pickerInput = document.createElement('input');
         pickerInput.type = 'text';
         pickerInput.className = 'gpfa-color-input';
-        pickerInput.setAttribute('data-alpha-enabled', 'true');
-        pickerInput.setAttribute('data-type', 'full');
         pickerWrap.appendChild(pickerInput);
+
+        // Set jQuery data directly — wp-color-picker-alpha reads these
+        // via .data() which may miss raw DOM attributes on new elements.
+        var $pickerInput = $(pickerInput);
+        $pickerInput.data('alphaEnabled', true);
+        $pickerInput.data('type', 'full');
+        $pickerInput.data('alphaColorType', 'rgba');
 
         var activeHandler = null;
         var pickerReady = false;
@@ -136,10 +141,16 @@
         });
 
         // Initialize wp-color-picker on our external input.
-        $(pickerInput).wpColorPicker({
+        $pickerInput.wpColorPicker({
+            type: 'full',
             change: function(event, ui) {
                 if (activeHandler) {
-                    activeHandler.setColor(ui.color.toString());
+                    var color = ui.color.toString();
+                    // If alpha shim is active, use to_s for rgba output.
+                    if (ui.color.to_s) {
+                        color = ui.color.to_s('rgba');
+                    }
+                    activeHandler.setColor(color);
                 }
             },
             clear: function() {
