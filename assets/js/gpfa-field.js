@@ -191,7 +191,7 @@
                 dir = angle + 'deg';
             }
 
-            var val = 'linear-gradient(' + dir + ', ' + gp.getSafeValue() + ')';
+            var val = 'linear-gradient(' + dir + ', ' + gp.getColorValue() + ')';
             input.value = val;
 
             if (preview) {

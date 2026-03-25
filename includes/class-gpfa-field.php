@@ -113,10 +113,12 @@ class GPFA_Field extends acf_field {
 			return '';
 		}
 
-		// Strict regex whitelist for linear-gradient.
-		$pattern = '/^linear-gradient\(\s*(to\s+(top|bottom|left|right)(\s+(top|bottom|left|right))?|\d{1,3}(\.\d+)?deg)\s*,(\s*(#[0-9a-fA-F]{3,8}|rgba?\(\s*[\d.\s,%\/]+\)|hsla?\(\s*[\d.\s,%\/]+\)|[a-z]+)\s+\d{1,3}(\.\d+)?%\s*,?)+\s*\)$/i';
-
-		if ( ! preg_match( $pattern, $value ) ) {
+		// Validate it looks like a linear-gradient and contains no script injection.
+		if (
+			0 !== strpos( $value, 'linear-gradient(' )
+			|| substr( $value, -1 ) !== ')'
+			|| preg_match( '/<|>|javascript:|expression\s*\(|url\s*\(/i', $value )
+		) {
 			return '';
 		}
 
