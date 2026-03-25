@@ -68,9 +68,8 @@ Yes. Each color stop supports full RGBA color picking with an alpha slider.
 
 == Screenshots ==
 
-1. The gradient picker field in the post editor
-2. Adding and dragging color stops on the gradient bar
-3. Field type selection showing the Gradient option
+1. The gradient picker field in the post editor with color picker open
+2. The gradient bar with multiple color stops and direction control
 
 == Changelog ==
 
