@@ -23,11 +23,6 @@ define( 'GPFA_VERSION', '1.0.0' );
 define( 'GPFA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'GPFA_URL', plugin_dir_url( __FILE__ ) );
 
-// Load text domain.
-add_action( 'init', function () {
-	load_plugin_textdomain( 'gradient-picker-for-acf', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-} );
-
 // Admin notice if ACF is not active.
 add_action( 'admin_notices', function () {
 	if ( class_exists( 'ACF' ) ) {
