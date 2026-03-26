@@ -20,8 +20,37 @@ function gpfa_parse_gradient( $value ) {
 		return false;
 	}
 
-	$inner     = $m[1];
-	$parts     = array_map( 'trim', str_getcsv( $inner ) );
+	$inner = $m[1];
+
+	/*
+	 * Split by commas that are NOT inside parentheses.
+	 * This handles rgb(), rgba(), hsl(), hsla() color values
+	 * which contain commas themselves.
+	 */
+	$parts = array();
+	$current = '';
+	$depth   = 0;
+	$len     = strlen( $inner );
+
+	for ( $i = 0; $i < $len; $i++ ) {
+		$ch = $inner[ $i ];
+		if ( '(' === $ch ) {
+			$depth++;
+			$current .= $ch;
+		} elseif ( ')' === $ch ) {
+			$depth--;
+			$current .= $ch;
+		} elseif ( ',' === $ch && 0 === $depth ) {
+			$parts[] = trim( $current );
+			$current = '';
+		} else {
+			$current .= $ch;
+		}
+	}
+	if ( '' !== trim( $current ) ) {
+		$parts[] = trim( $current );
+	}
+
 	$direction = '180deg';
 	$stops     = array();
 
@@ -31,7 +60,8 @@ function gpfa_parse_gradient( $value ) {
 	}
 
 	foreach ( $parts as $part ) {
-		if ( preg_match( '/^(.+?)\s+([\d.]+%?)$/', trim( $part ), $sm ) ) {
+		$part = trim( $part );
+		if ( preg_match( '/^(.+)\s+([\d.]+%?)$/', $part, $sm ) ) {
 			$stops[] = array(
 				'color'    => trim( $sm[1] ),
 				'position' => $sm[2],
